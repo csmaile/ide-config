@@ -14,7 +14,12 @@ return {
   {
     'nvim-lualine/lualine.nvim',
     dependencies = { 'nvim-tree/nvim-web-devicons' },
-    opts = require("config.theme").lualine
+    opts = require("config.theme").lualine,
+    config = function ()
+      vim.api.nvim_create_autocmd({"QuitPre"}, {
+        callback = function() vim.cmd("NvimTreeClose") end,
+      })
+    end
   },
 
   -- 目录树
@@ -95,16 +100,19 @@ return {
   },
 
   -- lsp
-  -- {
-  --   "neovim/nvim-lspconfig",
-  --   -- event = "LazyFile",
-  --   dependencies = {
-  --     { "folke/neoconf.nvim", cmd = "Neoconf", config = false, dependencies = { "nvim-lspconfig" } },
-  --     { "folke/neodev.nvim", opts = {} },
-  --     "mason.nvim",
-  --     "williamboman/mason-lspconfig.nvim",
-  --   },
-  -- },
+  {
+    "neovim/nvim-lspconfig",
+    -- event = "LazyFile",
+    dependencies = {
+      { "folke/neoconf.nvim", cmd = "Neoconf", config = false, dependencies = { "nvim-lspconfig" } },
+      { "folke/neodev.nvim", opts = {} },
+      { "mason.nvim", cmd = "Mason", config = false },
+      { "williamboman/mason-lspconfig.nvim", config = false },
+    },
+    config = function ()
+      require("config.lsp").setup()
+    end
+  },
   -- {
   --   "williamboman/mason.nvim",
   --   cmd = "Mason",
@@ -146,17 +154,6 @@ return {
   --   end,
   -- },
 
-  {
-    "williamboman/mason-lspconfig.nvim",
-    keys = { { "<leader>cm", "<cmd>Mason<cr>", desc = "Mason" } },
-    dependencies = {
-      "neovim/nvim-lspconfig",
-      "williamboman/mason.nvim",
-    },
-    config = function()
-      require("config.lsp").setup()
-    end
-  },
 
   -- 自动补全
   -- {
@@ -172,12 +169,15 @@ return {
   -- },
   {
     'hrsh7th/nvim-cmp',
-    event = { "InsertEnter", "CmdlineEnter" },
+    -- event = { "InsertEnter", "CmdlineEnter" },
     dependencies = {
       "L3MON4D3/LuaSnip",
       "saadparwaiz1/cmp_luasnip",
       "hrsh7th/cmp-nvim-lsp",
       "hrsh7th/cmp-path",
+      "hrsh7th/cmp-buffer",
+      "hrsh7th/cmp-cmdline",
+
       "rafamadriz/friendly-snippets",
     },
     config = function ()
@@ -202,5 +202,40 @@ return {
     opts = {} -- this is equalent to setup({}) function
   },
 
+  -- buffer 分割线
+  {
+    'akinsho/bufferline.nvim',
+    version = "*",
+    dependencies = {
+      'nvim-tree/nvim-web-devicons',
+      "famiu/bufdelete.nvim",
+    },
+    config = function ()
+      require("bufferline").setup{
+        diagnostics_indicator = function(count, level, diagnostics_dict, context)
+          local s = " "
+          for e, n in pairs(diagnostics_dict) do
+            local sym = e == "error" and " "
+              or (e == "warning" and " " or "" )
+            s = s .. n .. sym
+          end
+          return s
+        end,
+        offsets = {
+          {
+            filetype = "NvimTree",
+            text = function()
+              return vim.fn.getcwd()
+            end,
+            highlight = "Directory",
+            text_align = "left"
+          }
+        },
+        left_mouse_command = function(bufnum)
+          require('bufdelete').bufdelete(bufnum, true)
+        end
 
+      }
+    end
+  }
 }
